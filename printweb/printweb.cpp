@@ -13,6 +13,12 @@ namespace websocket = beast::websocket;     // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;                // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;           // from <boost/asio/ip/tcp.hpp>
 
+SERVICE_STATUS_HANDLE g_ServiceStatusHandle = NULL;
+SERVICE_STATUS g_ServiceStatus = {0};
+
+void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
+void WINAPI ServiceCtrlHandler(DWORD CtrlCode);
+
 void PrintData(const std::string& data) {
     HANDLE hPrinter;
     DOC_INFO_1W docInfo;
@@ -40,7 +46,7 @@ void PrintData(const std::string& data) {
     docInfo.pOutputFile = NULL;
     docInfo.pDatatype = dataType;
 
-    // Iniciar el trabajo de impresión
+    // Iniciar el trabajo de impresiï¿½n
     if (StartDocPrinterW(hPrinter, 1, (LPBYTE)&docInfo)) {
         if (StartPagePrinter(hPrinter)) {
             WritePrinter(hPrinter, (LPVOID)data.c_str(), static_cast<DWORD>(data.length()), &dwBytesWritten);
@@ -49,7 +55,7 @@ void PrintData(const std::string& data) {
         EndDocPrinter(hPrinter);
     }
     else {
-        std::wcerr << L"Error al iniciar la impresión." << std::endl;
+        std::wcerr << L"Error al iniciar la impresiï¿½n." << std::endl;
     }
 
     ClosePrinter(hPrinter);
@@ -86,7 +92,43 @@ void StartWebSocketServer() {
     }
 }
 
-int main() {
+void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
+    g_ServiceStatusHandle = RegisterServiceCtrlHandler(L"PrinterManager", ServiceCtrlHandler);
+    
+    // Inicializa el estado del servicio
+    g_ServiceStatus.dwServiceType = SERVICE_WIN32;
+    g_ServiceStatus.dwCurrentState = SERVICE_START_PENDING;
+    g_ServiceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+
+    // Inicia el servicio
+    g_ServiceStatus.dwCurrentState = SERVICE_RUNNING;
+    SetServiceStatus(g_ServiceStatusHandle, &g_ServiceStatus);
+
+    // AquÃ­ inicia tu servidor WebSocket
     StartWebSocketServer();
+    
+    // Cambia el estado a STOPPED cuando termine
+    g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
+    SetServiceStatus(g_ServiceStatusHandle, &g_ServiceStatus);
+}
+
+void WINAPI ServiceCtrlHandler(DWORD CtrlCode) {
+    switch (CtrlCode) {
+        case SERVICE_CONTROL_STOP:
+            g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
+            SetServiceStatus(g_ServiceStatusHandle, &g_ServiceStatus);
+            break;
+        default:
+            break;
+    }
+}
+
+int main() {
+    SERVICE_TABLE_ENTRY ServiceTable[] = {
+        {L"PrinterManager", (LPSERVICE_MAIN_FUNCTION)ServiceMain},
+        {NULL, NULL}
+    };
+
+    StartServiceCtrlDispatcher(ServiceTable);
     return 0;
 }

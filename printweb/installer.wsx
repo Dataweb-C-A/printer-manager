@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="NombreDelServicio" Language="1033" Version="1.0.0.0" Manufacturer="TuNombre" UpgradeCode="PUT-GUID-HERE">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="Una nueva versión de [ProductName] está instalada." />
+
+    <MediaTemplate />
+
+    <Feature Id="ProductFeature" Title="NombreDelServicio" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="NombreDelServicio">
+          <Component Id="ServiceExe" Guid="PUT-GUID-HERE">
+            <File Source="ruta\a\tu\ejecutable.exe" KeyPath="yes" />
+            <ServiceInstall
+              Id="MyServiceInstaller"
+              Type="own"
+              Name="NombreDelServicio"
+              Display="Nombre del Servicio"
+              Description="Descripción del servicio"
+              Start="auto"
+              ErrorControl="normal"
+              Account="LocalSystem"
+              />
+            <ServiceControl
+              Id="StartService"
+              Name="NombreDelServicio"
+              Start="install"
+              Stop="both"
+              Remove="uninstall"
+              Wait="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+  </Product>
+</Wix>
